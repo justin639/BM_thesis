@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from keras_applications import correct_pad
+from keras_applications import correct_pad, get_submodules_from_kwargs
 from keras_applications.imagenet_utils import _obtain_input_shape
 
 backend = None
@@ -90,9 +90,6 @@ def customMobileNetV2(input_shape=None,
                          '(pre-training on ImageNet), '
                          'or the path to the weights file to be loaded.')
 
-    if weights == 'imagenet' and include_top and classes != 1000:
-        raise ValueError('If using `weights` as `"imagenet"` with `include_top` '
-                         'as true, `classes` should be 1000')
 
     # If input_shape is None and no input_tensor
     if input_shape is None:
@@ -215,31 +212,28 @@ def customMobileNetV2(input_shape=None,
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
-    if input_tensor is not None:
-        inputs = keras_utils.get_source_inputs(input_tensor)
-    else:
-        inputs = img_input
+    inputs = img_input
 
     # Create model.
     model = models.Model(inputs, x,
                          name='mobilenetv2_%0.2f_%s' % (alpha, rows))
 
     # Load weights.
-    if weights == 'imagenet':
-        if include_top:
-            model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '.h5')
-            weight_path = BASE_WEIGHT_PATH + model_name
-            weights_path = keras_utils.get_file(
-                model_name, weight_path, cache_subdir='models')
-        else:
-            model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
-            weight_path = BASE_WEIGHT_PATH + model_name
-            weights_path = keras_utils.get_file(
-                model_name, weight_path, cache_subdir='models')
-        model.load_weights(weights_path)
-    elif weights is not None:
+    # if weights == 'imagenet':
+    #     if include_top:
+    #         model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
+    #                       str(alpha) + '_' + str(rows) + '.h5')
+    #         weight_path = BASE_WEIGHT_PATH + model_name
+    #         weights_path = keras_utils.get_file(
+    #             model_name, weight_path, cache_subdir='models')
+    #     else:
+    #         model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
+    #                       str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
+    #         weight_path = BASE_WEIGHT_PATH + model_name
+    #         weights_path = keras_utils.get_file(
+    #             model_name, weight_path, cache_subdir='models')
+    #     model.load_weights(weights_path)
+    if weights is not None:
         model.load_weights(weights)
 
     return model
