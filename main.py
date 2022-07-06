@@ -14,8 +14,16 @@ raw_valid = builder.as_dataset(split='valid', shuffle_files=True)
 
 tfds.show_examples(raw_train, builder.info)
 
-# Todo Our size id 32
-IMG_SIZE = 160
+# Extract hyper-parameters
+batch_size = 16
+img_size = 32
+momentum = 0.9
+classes = 5
+base_learning_rate = 0.00001
+validation_steps = 20
+initial_epochs = 100
+
+IMG_SIZE = img_size
 
 
 # Formatting data
@@ -31,7 +39,7 @@ train = raw_train.map(format_example)
 validation = raw_valid.map(format_example)
 test = raw_test.map(format_example)
 
-BATCH_SIZE = 16
+BATCH_SIZE = batch_size
 SHUFFLE_BUFFER_SIZE = 1000
 
 train_batches = train.shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
@@ -46,7 +54,6 @@ print(image_batch.shape)
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
 # Create the base model from the MobileNet V2
-# Todo extract the model build and calculate hyper-parameters
 base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights=None)
@@ -54,7 +61,6 @@ base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
 feature_batch = base_model(image_batch)
 print(feature_batch.shape)
 
-# Todo might have to change momentum
 base_model.trainable = True
 for layer in base_model.layers:
     if type(layer) == type(tf.keras.layers.BatchNormalization()):
@@ -64,9 +70,8 @@ base_model.summary()
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 feature_batch_average = global_average_layer(feature_batch)
 
-# Todo find classes(for our dataset, 5)
-#  dense layer api in tf
-prediction_layer = tf.keras.layers.Dense(1)
+prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
+                                         use_bias=True, name='Logits')
 prediction_batch = prediction_layer(feature_batch_average)
 
 model = tf.keras.Sequential([
@@ -75,12 +80,8 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-# Todo add hyper-parameters with
-#  adam categorical entropy
-#  no changes on batch normalization
-base_learning_rate = 0.00001
-model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
 

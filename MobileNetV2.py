@@ -15,7 +15,7 @@ raw_valid = builder.as_dataset(split='valid', shuffle_files=True)
 tfds.show_examples(raw_train, builder.info)
 
 # Todo extract the model build and calculate hyper-parameters
-batch_size = 0
+batch_size = 16
 img_size = 32
 momentum = 0.9
 classes = 5
@@ -24,10 +24,8 @@ base_learning_rate = 0.00001
 validation_steps = 20
 initial_epochs = 100
 
-
-
 # Our size is 32
-IMG_SIZE = 160
+IMG_SIZE = img_size
 
 
 # Formatting data
@@ -43,13 +41,14 @@ train = raw_train.map(format_example)
 validation = raw_valid.map(format_example)
 test = raw_test.map(format_example)
 
-BATCH_SIZE = 16
+BATCH_SIZE = batch_size
 SHUFFLE_BUFFER_SIZE = 1000
 
 train_batches = train.shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
 validation_batches = validation.batch(BATCH_SIZE)
 test_batches = test.batch(BATCH_SIZE)
 
+# what is this???
 for image_batch, label_batch in train_batches.take(1):
     pass
 
