@@ -9,6 +9,9 @@ layers = None
 models = None
 keras_utils = None
 
+# Set default hyper-values
+default_momentum = 0.9
+
 
 def _make_divisible(v, divisor, min_value=None):
     if min_value is None:
@@ -22,10 +25,8 @@ def _make_divisible(v, divisor, min_value=None):
 
 def customMobileNetV2(input_shape=None,
                 alpha=1.0,
-                include_top=True,
-                weights='imagenet',
-                pooling=None,
-                classes=1000,
+                weights=None,
+                momentum=default_momentum,
                 **kwargs):
     """Instantiates the MobileNetV2 architecture.
 
@@ -49,26 +50,9 @@ def customMobileNetV2(input_shape=None,
                 of filters in each layer.
             - If `alpha` = 1, default number of filters from the paper
                  are used at each layer.
-        include_top: whether to include the fully-connected
-            layer at the top of the network.
         weights: one of `None` (random initialization),
               'imagenet' (pre-training on ImageNet),
               or the path to the weights file to be loaded.
-        input_tensor: optional Keras tensor (i.e. output of
-            `layers.Input()`)
-            to use as image input for the model.
-        pooling: Optional pooling mode for feature extraction
-            when `include_top` is `False`.
-            - `None` means that the output of the model
-                will be the 4D tensor output of the
-                last convolutional block.
-            - `avg` means that global average pooling
-                will be applied to the output of the
-                last convolutional block, and thus
-                the output of the model will be a
-                2D tensor.
-            - `max` means that global max pooling will
-                be applied.
         classes: optional number of classes to classify images
             into, only to be specified if `include_top` is True, and
             if no `weights` argument is specified.
@@ -89,7 +73,6 @@ def customMobileNetV2(input_shape=None,
                          '`None` (random initialization), `imagenet` '
                          '(pre-training on ImageNet), '
                          'or the path to the weights file to be loaded.')
-
 
     # If input_shape is None and no input_tensor
     if input_shape is None:
@@ -112,7 +95,7 @@ def customMobileNetV2(input_shape=None,
                                       default_size=default_size,
                                       min_size=32,
                                       data_format=backend.image_data_format(),
-                                      require_flatten=include_top,
+                                      require_flatten=False,
                                       weights=weights)
 
     if backend.image_data_format() == 'channels_last':
@@ -125,7 +108,7 @@ def customMobileNetV2(input_shape=None,
     img_input = layers.Input(shape=input_shape)
 
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
-
+# Todo find accurate filter values
     first_block_filters = _make_divisible(32 * alpha, 8)
     x = layers.ZeroPadding2D(padding=correct_pad(backend, img_input, 3),
                              name='Conv1_pad')(img_input)
@@ -137,50 +120,50 @@ def customMobileNetV2(input_shape=None,
                       name='Conv1')(x)
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
-                                  momentum=0.999,
+                                  momentum=momentum,
                                   name='bn_Conv1')(x)
     x = layers.ReLU(6., name='Conv1_relu')(x)
 
     x = _inverted_res_block(x, filters=16, alpha=alpha, stride=1,
-                            expansion=1, block_id=0)
+                            expansion=1, block_id=0, momentum=momentum)
 
     x = _inverted_res_block(x, filters=24, alpha=alpha, stride=2,
-                            expansion=6, block_id=1)
+                            expansion=6, block_id=1, momentum=momentum)
     x = _inverted_res_block(x, filters=24, alpha=alpha, stride=1,
-                            expansion=6, block_id=2)
+                            expansion=6, block_id=2, momentum=momentum)
 
     x = _inverted_res_block(x, filters=32, alpha=alpha, stride=2,
-                            expansion=6, block_id=3)
+                            expansion=6, block_id=3, momentum=momentum)
     x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
-                            expansion=6, block_id=4)
+                            expansion=6, block_id=4, momentum=momentum)
     x = _inverted_res_block(x, filters=32, alpha=alpha, stride=1,
-                            expansion=6, block_id=5)
+                            expansion=6, block_id=5, momentum=momentum)
 
     x = _inverted_res_block(x, filters=64, alpha=alpha, stride=2,
-                            expansion=6, block_id=6)
+                            expansion=6, block_id=6, momentum=momentum)
     x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
-                            expansion=6, block_id=7)
+                            expansion=6, block_id=7, momentum=momentum)
     x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
-                            expansion=6, block_id=8)
+                            expansion=6, block_id=8, momentum=momentum)
     x = _inverted_res_block(x, filters=64, alpha=alpha, stride=1,
-                            expansion=6, block_id=9)
+                            expansion=6, block_id=9, momentum=momentum)
 
     x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
-                            expansion=6, block_id=10)
+                            expansion=6, block_id=10, momentum=momentum)
     x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
-                            expansion=6, block_id=11)
+                            expansion=6, block_id=11, momentum=momentum)
     x = _inverted_res_block(x, filters=96, alpha=alpha, stride=1,
-                            expansion=6, block_id=12)
+                            expansion=6, block_id=12, momentum=momentum)
 
     x = _inverted_res_block(x, filters=160, alpha=alpha, stride=2,
-                            expansion=6, block_id=13)
+                            expansion=6, block_id=13, momentum=momentum)
     x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
-                            expansion=6, block_id=14)
+                            expansion=6, block_id=14, momentum=momentum)
     x = _inverted_res_block(x, filters=160, alpha=alpha, stride=1,
-                            expansion=6, block_id=15)
+                            expansion=6, block_id=15, momentum=momentum)
 
     x = _inverted_res_block(x, filters=320, alpha=alpha, stride=1,
-                            expansion=6, block_id=16)
+                            expansion=6, block_id=16, momentum=momentum)
 
     # no alpha applied to last conv as stated in the paper:
     # if the width multiplier is greater than 1 we
@@ -196,19 +179,9 @@ def customMobileNetV2(input_shape=None,
                       name='Conv_1')(x)
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
-                                  momentum=0.999,
+                                  momentum=momentum,
                                   name='Conv_1_bn')(x)
     x = layers.ReLU(6., name='out_relu')(x)
-
-    if include_top:
-        x = layers.GlobalAveragePooling2D()(x)
-        x = layers.Dense(classes, activation='softmax',
-                         use_bias=True, name='Logits')(x)
-    else:
-        if pooling == 'avg':
-            x = layers.GlobalAveragePooling2D()(x)
-        elif pooling == 'max':
-            x = layers.GlobalMaxPooling2D()(x)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -239,7 +212,7 @@ def customMobileNetV2(input_shape=None,
     return model
 
 
-def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
+def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id, momentum):
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
 
     in_channels = backend.int_shape(inputs)[channel_axis]
@@ -258,7 +231,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
                           name=prefix + 'expand')(x)
         x = layers.BatchNormalization(axis=channel_axis,
                                       epsilon=1e-3,
-                                      momentum=0.999,
+                                      momentum=momentum,
                                       name=prefix + 'expand_BN')(x)
         x = layers.ReLU(6., name=prefix + 'expand_relu')(x)
     else:
@@ -276,7 +249,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
                                name=prefix + 'depthwise')(x)
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
-                                  momentum=0.999,
+                                  momentum=momentum,
                                   name=prefix + 'depthwise_BN')(x)
 
     x = layers.ReLU(6., name=prefix + 'depthwise_relu')(x)
@@ -290,7 +263,7 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
                       name=prefix + 'project')(x)
     x = layers.BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
-                                  momentum=0.999,
+                                  momentum=momentum,
                                   name=prefix + 'project_BN')(x)
 
     if in_channels == pointwise_filters and stride == 1:

@@ -3,9 +3,9 @@ import os
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import matplotlib.pyplot as plt
+from customMobileNetV2 import customMobileNetV2 as cmv2
 
-
-# Data download
+# Data downloaded
 builder = tfds.folder_dataset.ImageFolder('images/')
 print(builder.info)
 raw_train = builder.as_dataset(split='train', shuffle_files=True)
@@ -14,8 +14,27 @@ raw_valid = builder.as_dataset(split='valid', shuffle_files=True)
 
 tfds.show_examples(raw_train, builder.info)
 
-# Todo Our size id 32
+# Todo extract the model build and calculate hyper-parameters
+batch_size = 0
+img_size = 32
+momentum = 0.9
+classes = 5
+# Todo add hyper-parameters with
+#  adam, categorical entropy
+#  no changes on batch normalization
+# Todo find classes(for our dataset, 5)
+#  dense layer api in tf
+# epoch마다 점점 줄여보기
+base_learning_rate = 0.00001
+validation_steps = 20
+# bigger epoches
+initial_epochs = 100
+
+
+
+# Our size is 32
 IMG_SIZE = 160
+# IMG_SIZE = 32
 
 
 # Formatting data
@@ -46,27 +65,24 @@ print(image_batch.shape)
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
 # Create the base model from the MobileNet V2
-# Todo extract the model build and calculate hyper-parameters
-base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
-                                               include_top=False,
-                                               weights=None)
+base_model = cmv2(input_shape=IMG_SHAPE,
+                  momentum=momentum)
 
 feature_batch = base_model(image_batch)
 print(feature_batch.shape)
 
-# Todo might have to change momentum
 base_model.trainable = True
-for layer in base_model.layers:
-    if type(layer) == type(tf.keras.layers.BatchNormalization()):
-        layer.momentum = 0.9
+# Set momentum of Batch Normalization Layer to 0.9 -> inner implemented
+# for layer in base_model.layers:
+#     if type(layer) == type(tf.keras.layers.BatchNormalization()):
+#         layer.momentum = 0.9
 base_model.summary()
 
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 feature_batch_average = global_average_layer(feature_batch)
 
-# Todo find classes(for our dataset, 5)
-#  dense layer api in tf
-prediction_layer = tf.keras.layers.Dense(1)
+prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
+                                         use_bias=True, name='Logits')
 prediction_batch = prediction_layer(feature_batch_average)
 
 model = tf.keras.Sequential([
@@ -75,17 +91,10 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-# Todo add hyper-parameters with
-#  adam categorical entropy
-#  no changes on batch normalization
-base_learning_rate = 0.00001
 model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
               loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
-
-validation_steps = 20
-initial_epochs = 50
 
 loss0, accuracy0 = model.evaluate(validation_batches, steps=validation_steps)
 print("\ninitial loss: {:.2f}".format(loss0))
@@ -94,6 +103,7 @@ print("initial accuracy: {:.2f}".format(accuracy0))
 history = model.fit(train_batches,
                     epochs=initial_epochs,
                     validation_data=validation_batches)
+# todo save weight as .h5 file
 
 # Show result
 acc = history.history['accuracy']

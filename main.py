@@ -58,7 +58,7 @@ print(feature_batch.shape)
 base_model.trainable = True
 for layer in base_model.layers:
     if type(layer) == type(tf.keras.layers.BatchNormalization()):
-        layer.momentum = 0.9
+        layer.default_momentum = 0.9
 base_model.summary()
 
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
