@@ -19,22 +19,15 @@ batch_size = 0
 img_size = 32
 momentum = 0.9
 classes = 5
-# Todo add hyper-parameters with
-#  adam, categorical entropy
-#  no changes on batch normalization
-# Todo find classes(for our dataset, 5)
-#  dense layer api in tf
 # epoch마다 점점 줄여보기
 base_learning_rate = 0.00001
 validation_steps = 20
-# bigger epoches
 initial_epochs = 100
 
 
 
 # Our size is 32
 IMG_SIZE = 160
-# IMG_SIZE = 32
 
 
 # Formatting data
@@ -65,6 +58,10 @@ print(image_batch.shape)
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
 # Create the base model from the MobileNet V2
+base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
+                                               include_top=False,
+                                               weights=None)
+# Create with custom MNV2
 base_model = cmv2(input_shape=IMG_SHAPE,
                   momentum=momentum)
 
@@ -91,8 +88,8 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
 
