@@ -70,8 +70,7 @@ base_model.summary()
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 feature_batch_average = global_average_layer(feature_batch)
 
-prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
-                                         use_bias=True, name='Logits')
+prediction_layer = tf.keras.layers.Dense(1)
 prediction_batch = prediction_layer(feature_batch_average)
 
 model = tf.keras.Sequential([
@@ -80,8 +79,8 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
 

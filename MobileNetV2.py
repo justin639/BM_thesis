@@ -61,24 +61,26 @@ base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
                                                include_top=False,
                                                weights=None)
 # Create with custom MNV2
-base_model = cmv2(input_shape=IMG_SHAPE,
-                  momentum=momentum)
+# base_model = cmv2(input_shape=IMG_SHAPE,
+#                   momentum=momentum)
 
 feature_batch = base_model(image_batch)
 print(feature_batch.shape)
 
 base_model.trainable = True
 # Set momentum of Batch Normalization Layer to 0.9 -> inner implemented
-# for layer in base_model.layers:
-#     if type(layer) == type(tf.keras.layers.BatchNormalization()):
-#         layer.momentum = 0.9
+for layer in base_model.layers:
+    if type(layer) == type(tf.keras.layers.BatchNormalization()):
+        layer.momentum = 0.9
 base_model.summary()
 
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 feature_batch_average = global_average_layer(feature_batch)
 
-prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
-                                         use_bias=True, name='Logits')
+prediction_layer = tf.keras.layers.Dense(1)
+# for 2 or more classes
+# prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
+#                                          use_bias=True, name='Logits')
 prediction_batch = prediction_layer(feature_batch_average)
 
 model = tf.keras.Sequential([
@@ -87,9 +89,13 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
               metrics=['accuracy'])
+# for 2 or more classes
+# model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+#               loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+#               metrics=['accuracy'])
 model.summary()
 
 loss0, accuracy0 = model.evaluate(validation_batches, steps=validation_steps)
