@@ -1,8 +1,7 @@
 import os
-import numpy as np
-import tensorflow as tf
 from keras_applications import correct_pad, get_submodules_from_kwargs
 from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow_core.python.keras.applications import keras_modules_injection
 
 backend = None
 layers = None
@@ -23,11 +22,12 @@ def _make_divisible(v, divisor, min_value=None):
     return new_v
 
 
+@keras_modules_injection
 def customMobileNetV2(input_shape=None,
-                alpha=1.0,
-                weights=None,
-                momentum=default_momentum,
-                **kwargs):
+                      alpha=1.0,
+                      weights=None,
+                      momentum=default_momentum,
+                      **kwargs):
     """Instantiates the MobileNetV2 architecture.
 
     # Arguments
@@ -108,7 +108,7 @@ def customMobileNetV2(input_shape=None,
     img_input = layers.Input(shape=input_shape)
 
     channel_axis = 1 if backend.image_data_format() == 'channels_first' else -1
-# Todo find accurate filter values
+    # Todo find accurate filter values
     first_block_filters = _make_divisible(32 * alpha, 8)
     x = layers.ZeroPadding2D(padding=correct_pad(backend, img_input, 3),
                              name='Conv1_pad')(img_input)
@@ -189,23 +189,9 @@ def customMobileNetV2(input_shape=None,
 
     # Create model.
     model = models.Model(inputs, x,
-                         name='mobilenetv2_%0.2f_%s' % (alpha, rows))
+                         name='custom_mobilenetv2_%0.2f_%s' % (alpha, rows))
 
     # Load weights.
-    # if weights == 'imagenet':
-    #     if include_top:
-    #         model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-    #                       str(alpha) + '_' + str(rows) + '.h5')
-    #         weight_path = BASE_WEIGHT_PATH + model_name
-    #         weights_path = keras_utils.get_file(
-    #             model_name, weight_path, cache_subdir='models')
-    #     else:
-    #         model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-    #                       str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
-    #         weight_path = BASE_WEIGHT_PATH + model_name
-    #         weights_path = keras_utils.get_file(
-    #             model_name, weight_path, cache_subdir='models')
-    #     model.load_weights(weights_path)
     if weights is not None:
         model.load_weights(weights)
 

@@ -18,7 +18,7 @@ tfds.show_examples(raw_train, builder.info)
 batch_size = 16
 img_size = 32
 momentum = 0.9
-classes = 5
+# classes = 5
 # epoch마다 점점 줄여보기
 base_learning_rate = 0.00001
 validation_steps = 20
@@ -71,7 +71,7 @@ base_model.trainable = True
 # Set momentum of Batch Normalization Layer to 0.9 -> inner implemented
 for layer in base_model.layers:
     if type(layer) == type(tf.keras.layers.BatchNormalization()):
-        layer.momentum = 0.9
+        layer.momentum = momentum
 base_model.summary()
 
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
@@ -104,7 +104,8 @@ print("initial accuracy: {:.2f}".format(accuracy0))
 
 history = model.fit(train_batches,
                     epochs=initial_epochs,
-                    validation_data=validation_batches)
+                    validation_data=validation_batches,
+                    verbose=2)
 # todo save weight as .h5 file
 
 # Show result

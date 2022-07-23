@@ -1,77 +1,74 @@
 import numpy as np
-import os
 import tensorflow as tf
-import tensorflow_datasets as tfds
-import matplotlib.pyplot as plt
+import matplotlib.pylab as plt
+import scipy.io
+from customMobileNetV2 import customMobileNetV2 as cmv2
 
+path = "NearFallPaper_Data_Code/"
 
-# Data download
-builder = tfds.folder_dataset.ImageFolder('images/')
-print(builder.info)
-raw_train = builder.as_dataset(split='train', shuffle_files=True)
-raw_test = builder.as_dataset(split='test', shuffle_files=True)
-raw_valid = builder.as_dataset(split='valid', shuffle_files=True)
+mat_file_data = "M_AllFeatureKalman_Data_128.mat"
+mat_file = scipy.io.loadmat(path + mat_file_data)
+data_value = mat_file[mat_file_data[:-4]]
 
-tfds.show_examples(raw_train, builder.info)
+IMG_SIZE = 32
+# print(mat_file_value[0][0][0][10379])
 
-# Extract hyper-parameters
+print("Number of data : " + str(data_value[0][0].size))
+print("Input data shape : " + str(data_value[:, :, [0], [0]].shape))
+
+train_x = np.zeros((data_value[0][0].size, IMG_SIZE, IMG_SIZE, 3))
+print(train_x.shape)
+
+for i in range(0, data_value[0][0].size):
+    target = data_value[:, :, [0], [i]]
+    W, L, H = target.shape
+    image = np.zeros((W, L, 3))
+    # print(image[:, :, 0].shape)
+    image[:, :, 0] = target[..., 0]
+    image[:, :, 1] = target[..., 0]
+    image[:, :, 2] = target[..., 0]
+    # resize input size with 3 different filters and add to train_x array
+    train_x[i] = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
+    # print("[" + str(i) + "] : " + str(train_x[i]))
+
+test_x = train_x[0:500]
+print(test_x.shape)
+
+mat_file_label = "M_Label_One.mat"
+mat_file = scipy.io.loadmat(path + mat_file_label)
+train_y = mat_file[mat_file_label[:-4]]
+train_y = tf.keras.utils.to_categorical(train_y)
+print(train_y.shape)
+
+test_y = train_y[0:500]
+print(test_y.shape)
+
+##############################################################################
+# Todo extract the model build and calculate hyper-parameters
 batch_size = 16
 img_size = 32
 momentum = 0.9
-classes = 5
+# epoch마다 점점 줄여보기
 base_learning_rate = 0.00001
 validation_steps = 20
 initial_epochs = 100
+classes = 4
 
-IMG_SIZE = img_size
-
-
-# Formatting data
-def format_example(pair):
-    image, label = pair['image'], pair['label']
-    image = tf.cast(image, tf.float32)
-    image = (image / 127.5) - 1
-    image = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
-    return image, label
-
-
-train = raw_train.map(format_example)
-validation = raw_valid.map(format_example)
-test = raw_test.map(format_example)
-
-BATCH_SIZE = batch_size
-SHUFFLE_BUFFER_SIZE = 1000
-
-train_batches = train.shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
-validation_batches = validation.batch(BATCH_SIZE)
-test_batches = test.batch(BATCH_SIZE)
-
-for image_batch, label_batch in train_batches.take(1):
-    pass
-
-print(image_batch.shape)
 
 IMG_SHAPE = (IMG_SIZE, IMG_SIZE, 3)
 
-# Create the base model from the MobileNet V2
-base_model = tf.keras.applications.MobileNetV2(input_shape=IMG_SHAPE,
-                                               include_top=False,
-                                               weights=None)
-
-feature_batch = base_model(image_batch)
-print(feature_batch.shape)
+# Create with custom MNV2
+base_model = cmv2(input_shape=IMG_SHAPE,
+                  momentum=momentum)
 
 base_model.trainable = True
-for layer in base_model.layers:
-    if type(layer) == type(tf.keras.layers.BatchNormalization()):
-        layer.default_momentum = 0.9
 base_model.summary()
 
 global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
-feature_batch_average = global_average_layer(feature_batch)
 
-prediction_layer = tf.keras.layers.Dense(1)
-prediction_batch = prediction_layer(feature_batch_average)
+# for 2 or more classes
+prediction_layer = tf.keras.layers.Dense(classes, activation='softmax',
+                                         use_bias=True, name='Logits')
 
 model = tf.keras.Sequential([
     base_model,
@@ -79,21 +76,42 @@ model = tf.keras.Sequential([
     prediction_layer
 ])
 
-model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
+# for 2 or more classes
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
+              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
 model.summary()
 
-validation_steps = 20
-initial_epochs = 50
-
-loss0, accuracy0 = model.evaluate(validation_batches, steps=validation_steps)
+loss0, accuracy0 = model.evaluate(test_x, test_y, batch_size=batch_size, steps=validation_steps)
 print("\ninitial loss: {:.2f}".format(loss0))
 print("initial accuracy: {:.2f}".format(accuracy0))
 
-history = model.fit(train_batches,
+history = model.fit(train_x,train_y,
                     epochs=initial_epochs,
-                    validation_data=validation_batches)
+                    validation_data=(test_x, test_y),
+                    verbose=2)
+# todo save weight as .h5 file
+
+# for layer in model.layers:
+#     if 'conv' in layer.name:
+#         kernel, biases = layer.get_weights()
+#         print(layer.name, kernel.shape)  # 커널의 텐서 모양을 출력
+#
+# kernel, biases = model.layers[0].get_weights()  # 층 0의 커널 정보를 저장
+# minv, maxv = kernel.min(), kernel.max()
+# kernel = (kernel - minv) / (maxv - minv)
+# n_kernel = 32
+#
+# plt.figure(figsize=(20, 3))
+# plt.suptitle("Kernels of customMNV_2")
+# for i in range(n_kernel):
+#     f = kernel[:, :, :, i]
+#     plt.subplot(3, n_kernel, i + 1)
+#     plt.imshow(f[:, :, 0], cmap='gray')
+#     plt.xticks([])
+#     plt.yticks([])
+#     plt.title(str(i))
+# plt.show()
 
 # Show result
 acc = history.history['accuracy']

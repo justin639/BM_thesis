@@ -74,29 +74,29 @@ def validation(loss_function, visualize):
     hist = dmlp.fit(x_train, y_train, batch_size=128, epochs=30, validation_data=(x_test, y_test), verbose=2)
 
     # # 커널의 시각화
-    # if visualize:
-    #     dmlp.summary()  # cnn 모델의 정보 출력
+    if visualize:
+        dmlp.summary()  # cnn 모델의 정보 출력
 
-    #     for layer in dmlp.layers:
-    #         if 'conv' in layer.name:
-    #             kernel, biases = layer.get_weights()
-    #             print(layer.name, kernel.shape)  # 커널의 텐서 모양을 출력
+        for layer in dmlp.layers:
+            if 'conv' in layer.name:
+                kernel, biases = layer.get_weights()
+                print(layer.name, kernel.shape)  # 커널의 텐서 모양을 출력
 
-    #     kernel, biases = dmlp.layers[0].get_weights()  # 층 0의 커널 정보를 저장
-    #     minv, maxv = kernel.min(), kernel.max()
-    #     kernel = (kernel - minv) / (maxv - minv)
-    #     n_kernel = 32
+        kernel, biases = dmlp.layers[0].get_weights()  # 층 0의 커널 정보를 저장
+        minv, maxv = kernel.min(), kernel.max()
+        kernel = (kernel - minv) / (maxv - minv)
+        n_kernel = 32
 
-    #     plt.figure(figsize=(20, 3))
-    #     plt.suptitle("Kernels of con2d_4")
-    #     for i in range(n_kernel):
-    #         f = kernel[:, :, :, i]
-    #         plt.subplot(3, n_kernel, i+1)
-    #         plt.imshow(f[:, :, 0], cmap='gray')
-    #         plt.xticks([])
-    #         plt.yticks([])
-    #         plt.title(str(i))
-    #     plt.show()
+        plt.figure(figsize=(20, 3))
+        plt.suptitle("Kernels of con2d_4")
+        for i in range(n_kernel):
+            f = kernel[:, :, :, i]
+            plt.subplot(3, n_kernel, i+1)
+            plt.imshow(f[:, :, 0], cmap='gray')
+            plt.xticks([])
+            plt.yticks([])
+            plt.title(str(i))
+        plt.show()
 
     res = dmlp.evaluate(x_test, y_test, verbose=0)[1] * 100
     return res, hist
