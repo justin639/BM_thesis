@@ -28,6 +28,8 @@ for i in range(0, data_value[0][0].size):
     image[:, :, 1] = target[..., 0]
     image[:, :, 2] = target[..., 0]
     # resize input size with 3 different filters and add to train_x array
+    image = tf.cast(image, tf.float32)
+    image = image / 255.0
     train_x[i] = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
     # print("[" + str(i) + "] : " + str(train_x[i]))
 
@@ -78,7 +80,7 @@ model = tf.keras.Sequential([
 
 # for 2 or more classes
 model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-              loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+              loss='categorical_crossentropy',
               metrics=['accuracy'])
 model.summary()
 
