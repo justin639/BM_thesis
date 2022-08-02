@@ -103,14 +103,14 @@ def create_model(img_size, momentum, classes, base_learning_rate):
 
     # for 2 or more classes
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
-                  loss=tf.keras.losses.CategoricalCrossentropy,
+                  loss='categorical_crossentropy',
                   metrics=['accuracy'])
     return model
 
 
 ##############################################################################
 # Todo extract the model build and calculate hyper-parameters
-data_path = "NearFallPaper_DataCode"
+data_path = "NearFallPaper_Data_Code"
 batch_size = 16
 img_size = 32
 momentum = 0.9
@@ -137,10 +137,11 @@ history = model.fit(train_x, train_y,
                     validation_data=(test_x, test_y),
                     verbose=2)
 # todo save weight as .h5 file
-model_path = 'saved_models/customMNV2.h5'
+model_path = 'NearFall_Model_100.h5'
 # Save model
 model.save(model_path)
 # Reload model
+# todo reset anaconda env
 new_model = keras.models.load_model(model_path)
 new_model.summary()
 # Check accuracy
