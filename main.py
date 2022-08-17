@@ -120,7 +120,7 @@ validation_steps = 20
 initial_epochs = 100
 classes = 4
 # Get Data from mat file
-train_x, train_y, test_x, test_y = getdata_from_mat(data_path, img_size)
+test_x, test_y, train_x, train_y = getdata_from_mat(data_path, img_size)
 
 # Create model
 model = create_model(img_size=img_size, momentum=momentum, classes=classes, base_learning_rate=base_learning_rate)
