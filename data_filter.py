@@ -1,18 +1,17 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import openpyxl
 import os
 from scipy.signal import convolve
 
-folder_path = "GPData/MECH/3"
+folder_path = "GPData/MECH/"
 
 action = ["abduction", "drink", "flexion", "static"]
 setnum = ["01", "02"]
 name = ["KJS", "KTW", "LMS", "PJM", "1", "2", "3"]
 format = ".xlsx"
 
-file_name = "static_03.xlsx"
+file_name = "abduction01_KJS.xlsx"
 
 # read data from excel
 df = pd.read_excel(os.path.join(folder_path, file_name), engine='openpyxl')
