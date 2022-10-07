@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pylab as plt
+from sklearn.model_selection import train_test_split
 import scipy.io
 from customMobileNetV2 import customMobileNetV2 as cmv2
 
@@ -33,6 +34,63 @@ def show_result(history):
     plt.title('Training and Validation Loss')
     plt.xlabel('epoch')
     plt.show()
+
+def getBMData(path):
+    CNNXdata_file_name = path + "/xdata.npy"
+    NNXdata_file_name = path + "/xdata2.npy"
+    Ydata_file_name = path + "/ydata.npy"
+
+    CNNXdata = np.load(CNNXdata_file_name, allow_pickle=True)  # 데이터 로드. @파일명
+    NNXdata = np.load(NNXdata_file_name)  # 데이터 로드. @파일명
+    Ydata = np.load(Ydata_file_name)  # 데이터 로드. @파일명
+
+    if CNNXdata.ndim == 3:
+        CNNXdata = CNNXdata.reshape(CNNXdata.shape[0], CNNXdata.shape[1], CNNXdata.shape[2], 1)
+    else:
+        CNNXdata = CNNXdata
+
+    if NNXdata.ndim == 3:
+        NNXdata = NNXdata.reshape(NNXdata.shape[0], (NNXdata.shape[1] * NNXdata.shape[2]))
+    else:
+        NNXdata = NNXdata
+
+    if Ydata.ndim == 3:
+        CNNYdata = Ydata.reshape(Ydata.shape[0], (Ydata.shape[1] * Ydata.shape[2]))
+        NNYdata = Ydata.reshape(Ydata.shape[0])
+    else:
+        Ydata = Ydata
+
+
+    CNNXdata = expand_3D(CNNXdata)
+    CNNYdata = tf.keras.utils.to_categorical(CNNYdata)
+
+    x_train, x_test, y_train, y_test = train_test_split(CNNXdata, CNNYdata, test_size=0.2, random_state=1)
+
+    # x_train = expand_3D(x_train)
+    # x_test = expand_3D(x_test)
+    # y_train = tf.keras.utils.to_categorical(y_train)
+    # y_test = tf.keras.utils.to_categorical(y_test)
+
+    return x_train, x_test, y_train, y_test
+
+
+def expand_3D(data_value):
+    num, w, l, c = data_value.shape
+    train_x = np.zeros((num, w, l, 3))
+
+    for i in range(0, num):
+        target = data_value[i , ...]
+        W, L, _ = target.shape
+        image = np.zeros((W, L, 3))
+        image[:, :, 0] = target[0, ...]
+        image[:, :, 1] = target[0, ...]
+        image[:, :, 2] = target[0, ...]
+        # resize input size with 3 different filters and add to train_x array
+        image = tf.cast(image, tf.float32)
+        image = image / 255.0
+        train_x[i] = image
+        # print("[" + str(i) + "] : " + str(train_x[i]))
+    return train_x
 
 
 def getdata_from_mat(path, img_size):
@@ -110,42 +168,46 @@ def create_model(img_size, momentum, classes, base_learning_rate):
 
 ##############################################################################
 # Todo extract the model build and calculate hyper-parameters
-data_path = "NearFallPaper_Data_Code"
+data_path = "NearFallPaper_DataCode"
+path = "BMData"
 batch_size = 16
-img_size = 32
+img_size = 35
 momentum = 0.9
 # epoch마다 점점 줄여보기
 base_learning_rate = 0.00001
 validation_steps = 20
 initial_epochs = 100
-classes = 4
+classes = 7
 # Get Data from mat file
-test_x, test_y, train_x, train_y = getdata_from_mat(data_path, img_size)
+# test_x, test_y, train_x, train_y = getdata_from_mat(data_path, img_size)
+x_train, x_test, y_train, y_test = getBMData(path +"/")
+
+# print(x_train.shape)
+# print(y_train.shape)
 
 # Create model
 model = create_model(img_size=img_size, momentum=momentum, classes=classes, base_learning_rate=base_learning_rate)
 # Print model architecture
 model.summary()
 
-loss0, accuracy0 = model.evaluate(test_x, test_y, batch_size=batch_size, steps=validation_steps)
+loss0, accuracy0 = model.evaluate(x_test, y_test, batch_size=batch_size, steps=validation_steps)
 print("\nInitial loss: {:.2f}".format(loss0))
 print("initial accuracy: {:.2f}".format(accuracy0))
 
 # Train for epochs
-history = model.fit(train_x, train_y,
+history = model.fit(x_train, y_train,
                     epochs=initial_epochs,
-                    validation_data=(test_x, test_y),
+                    validation_data=(x_test, y_test),
                     verbose=2)
 # todo save weight as .h5 file
 model_path = 'NearFall_Model_100.h5'
 # Save model
 model.save(model_path)
 # Reload model
-# todo reset anaconda env
 new_model = keras.models.load_model(model_path)
 new_model.summary()
 # Check accuracy
-loss, acc = new_model.evaluate(test_x,  test_y, verbose=2)
+loss, acc = new_model.evaluate(x_test,  y_test, verbose=2)
 print('복원된 모델의 정확도: {:5.2f}%'.format(100*acc))
 
 # Show weight result

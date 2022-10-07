@@ -16,7 +16,7 @@ tfds.show_examples(raw_train, builder.info)
 
 # Todo extract the model build and calculate hyper-parameters
 batch_size = 16
-img_size = 32
+img_size = 35
 momentum = 0.9
 # classes = 5
 # epoch마다 점점 줄여보기
