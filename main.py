@@ -1,6 +1,5 @@
+from bayes_opt import BayesianOptimization
 from tensorflow import keras
-import tensorflow as tf
-from tensorflow.keras.applications import MobileNetV2
 import utils
 
 # Todo extract the model build and calculate hyper-parameters
@@ -31,6 +30,24 @@ model = utils.create_model(img_size=img_size,
 
 # Print model architecture
 model.summary()
+
+learn_rate_opts = (0.00001, 0.0001)
+
+MNV2_param_options1 = {
+    'base_learning_rate': learn_rate_opts,
+}
+
+model_MNV2pti = BayesianOptimization(
+    f=utils.create_model,
+    pbounds=MNV2_param_options1,
+    verbose=2,  # verbose = 1 prints only when a maximum is observed, verbose = 0 is silent
+    random_state=1234,
+)
+
+model_MNV2pti.maximize(
+    init_points=0,
+    n_iter=10, acq='ei', xi=0.01
+)
 
 loss0, accuracy0 = model.evaluate(x_test, y_test, batch_size=batch_size, steps=validation_steps)
 print("\nInitial loss: {:.2f}".format(loss0))

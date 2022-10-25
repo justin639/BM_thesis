@@ -159,7 +159,7 @@ def getdata_from_mat(path, img_size):
     return test_x, test_y, train_x, train_y
 
 
-def create_model(img_size, momentum, classes, base_learning_rate, model_type='custom'):
+def create_model(base_learning_rate, img_size=35, momentum=0.9, classes=7, model_type='custom'):
     img_shape = (img_size, img_size, 3)
     # Create with custom MNV2
     if model_type == 'custom':
