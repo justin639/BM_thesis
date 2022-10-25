@@ -30,6 +30,7 @@ def getOffset(data):
 WIN_SIZE = 50
 WIN_SIZE_ACC = 25
 WIN_SIZE_EMG = 10
+total_matrix = []
 
 # FSR(1:2) | ANG(3)
 # average filter window size : 50, offset = data[0:100]/100
@@ -87,7 +88,4 @@ plt.show()
 save = pd.DataFrame([acc_1_avg, acc_2_avg, acc_3_avg]).T
 save.to_excel(os.path.join(folder_path, "filtered_"+file_name), index=False)
 # average filter window size : 50, offset = 0
-# EMG
-# average filter window size : 10, offset = data[0:100]/100
-# butter
-
+data_shape = acc_1_avg.shape
