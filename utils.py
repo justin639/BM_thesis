@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pylab as plt
-from sklearn.metrics import confusion_matrix
+from tensorflow.keras.utils import plot_model
+from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import train_test_split
 import scipy.io
 from tensorflow_core.python.keras.utils import np_utils
@@ -49,13 +50,11 @@ def show_confusion_matrix(model, x_test, y_test):
     conf_mat = confusion_matrix(y_test.argmax(axis=1), pred.argmax(axis=1))
     print("Confussion Matrix")
     print(conf_mat)
-    fig, ax = plt.subplots(figsize=(8, 7))
+    fig, ax = plt.subplots(figsize=(7, 6))
     sns.heatmap(pd.DataFrame(conf_mat), annot=True, cmap="YlGnBu", fmt='g')
     ax.xaxis.set_label_position("top")
     plt.tight_layout()
     plt.title('Resnet Confusion matrix Opti')
-    plt.ylabel('Actual label')
-    plt.xlabel('Predicted label')
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
     tick_marks = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5]
@@ -193,6 +192,10 @@ def create_model(base_learning_rate, img_size=35, momentum=0.9, classes=7, model
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=base_learning_rate),
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
+
+    # plot graph of model
+    plot_model(model, to_file='MNV2model.png', show_shapes=True)
+
     return model
 
 # Show weight result
