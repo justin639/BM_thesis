@@ -3,11 +3,13 @@ import pandas as pd
 import tensorflow as tf
 import matplotlib.pylab as plt
 from tensorflow.keras.utils import plot_model
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, roc_auc_score, auc
 from sklearn.model_selection import train_test_split
 import scipy.io
+from numpy import interp
 from tensorflow_core.python.keras.utils import np_utils
 import seaborn as sns
+from itertools import cycle
 from customMobileNetV2 import customMobileNetV2 as cmv2
 from tensorflow.keras.applications import MobileNetV2
 
@@ -45,15 +47,15 @@ def show_result(history):
 def show_confusion_matrix(model, x_test, y_test):
     class_names = [1, 2, 3, 4, 5, 6, 7]  # name  of classes
 
-    pred = model.predict(x_test)
-    pred = np_utils.to_categorical(np.argmax(pred, axis=1))
+    y_pred = model.predict(x_test)
+    pred = np_utils.to_categorical(np.argmax(y_pred, axis=1))
     conf_mat = confusion_matrix(y_test.argmax(axis=1), pred.argmax(axis=1))
     print("Confussion Matrix")
     print(conf_mat)
     fig, ax = plt.subplots(figsize=(7, 6))
     sns.heatmap(pd.DataFrame(conf_mat), annot=True, cmap="YlGnBu", fmt='g')
     ax.xaxis.set_label_position("top")
-    plt.tight_layout()
+    plt.figure()
     plt.title('Resnet Confusion matrix Opti')
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
@@ -61,6 +63,77 @@ def show_confusion_matrix(model, x_test, y_test):
     plt.xticks(tick_marks, class_names)
     plt.yticks(tick_marks, class_names)
     plt.savefig("confusion_matrix.png")
+
+    # for i in range(1, 8):
+    #     fpr, tpr, _ = roc_curve(y_test.argmax(axis=1), y_pred.argmax(axis=1), pos_label=i)
+    #     auc = round(roc_auc_score(y_test, y_pred), 4)
+    #     plt.plot(fpr, tpr, label="Class" + str(i) + ", AUC=" + str(auc))
+    #
+    # plt.ylabel('True Positive Rate')
+    # plt.xlabel('False Positive Rate')
+    # plt.savefig('roc_graph.png')
+
+def show_roc_curve(model, x_test, y_test):
+    class_names = [1, 2, 3, 4, 5, 6, 7]  # name  of classes
+    y_pred = model.predict(x_test)
+    numclasses = len(class_names)
+    # Plot linewidth.
+    lw = 2
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(numclasses):
+        fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_pred[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    # Compute micro-average ROC curve and ROC area
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+    # Compute macro-average ROC curve and ROC area
+
+    # First aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(numclasses)]))
+
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(numclasses):
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= numclasses
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    # Plot all ROC curves
+    plt.figure()
+    plt.plot(fpr["micro"], tpr["micro"],
+             label='micro-average(area = {0:0.2f})'
+                   ''.format(roc_auc["micro"]),
+             color='deeppink', linestyle=':', linewidth=4)
+
+    plt.plot(fpr["macro"], tpr["macro"],
+             label='macro-average(area = {0:0.2f})'
+                   ''.format(roc_auc["macro"]),
+             color='navy', linestyle=':', linewidth=4)
+
+    colors = cycle(["red", "blue", "orange", "gold", "aqua", "darkorange", "cornflowerblue"])
+    for i, color in zip(range(numclasses), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                 label='class {0} (area = {1:0.2f})'
+                       ''.format(i, roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("MobileNetV2 Roc curve")
+    plt.legend(loc="lower right")
+    plt.savefig("roc_graph.png")
 
 
 def getBMData(path, model_type='CNN'):
@@ -86,7 +159,7 @@ def getBMData(path, model_type='CNN'):
         CNNYdata = Ydata.reshape(Ydata.shape[0], (Ydata.shape[1] * Ydata.shape[2]))
         NNYdata = Ydata.reshape(Ydata.shape[0])
     else:
-        Ydata = Ydata
+        CNNYdata = Ydata
 
     CNNXdata = expand_3D(CNNXdata)
     CNNYdata = tf.keras.utils.to_categorical(CNNYdata)
