@@ -1,7 +1,8 @@
 import numpy as np
 from bayes_opt import BayesianOptimization
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, roc_curve
 from tensorflow import keras
+from sklearn.model_selection import train_test_split
 import utils
 
 # Todo extract the model build and calculate hyper-parameters
@@ -18,9 +19,11 @@ initial_epochs = 100
 classes = 7
 # Get Data from mat file
 # test_x, test_y, train_x, train_y = utils.getdata_from_mat(data_path, img_size)
-x_train, x_test, y_train, y_test = utils.getBMData(path)
+# x_train, x_test, y_train, y_test = utils.getBMData(path)
+x_train, x_test, y_train, y_test = utils.getBMData_split(path)
 
 learn_rate_opts = (0.00001, 0.0001)
+
 
 def create_model_Bayesian(base_learning_rate, x_train=x_train, x_test=x_test, y_train=y_train, y_test=y_test):
 
@@ -40,6 +43,7 @@ def create_model_Bayesian(base_learning_rate, x_train=x_train, x_test=x_test, y_
     loss = 1 - acc
 
     return loss
+
 
 MNV2_param_options1 = {
     'base_learning_rate': learn_rate_opts,
@@ -74,11 +78,13 @@ loss0, accuracy0 = model.evaluate(x_test, y_test, batch_size=batch_size, steps=v
 print("\nInitial loss: {:.2f}".format(loss0))
 print("initial accuracy: {:.2f}".format(accuracy0))
 
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.1, random_state=1)
+
 # Train for epochs
 history = model.fit(x_train, y_train,
-                    epochs=300,
+                    epochs=initial_epochs,
                     batch_size=batch_size,
-                    validation_data=(x_test, y_test),
+                    validation_data=(x_val, y_val),
                     verbose=2)
 
 # todo save weight as .h5 file

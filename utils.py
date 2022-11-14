@@ -55,7 +55,7 @@ def show_confusion_matrix(model, x_test, y_test):
     fig, ax = plt.subplots(figsize=(7, 6))
     sns.heatmap(pd.DataFrame(conf_mat), annot=True, cmap="YlGnBu", fmt='g')
     ax.xaxis.set_label_position("top")
-    plt.figure()
+    plt.tight_layout()
     plt.title('Resnet Confusion matrix Opti')
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
@@ -64,14 +64,6 @@ def show_confusion_matrix(model, x_test, y_test):
     plt.yticks(tick_marks, class_names)
     plt.savefig("confusion_matrix.png")
 
-    # for i in range(1, 8):
-    #     fpr, tpr, _ = roc_curve(y_test.argmax(axis=1), y_pred.argmax(axis=1), pos_label=i)
-    #     auc = round(roc_auc_score(y_test, y_pred), 4)
-    #     plt.plot(fpr, tpr, label="Class" + str(i) + ", AUC=" + str(auc))
-    #
-    # plt.ylabel('True Positive Rate')
-    # plt.xlabel('False Positive Rate')
-    # plt.savefig('roc_graph.png')
 
 def show_roc_curve(model, x_test, y_test):
     class_names = [1, 2, 3, 4, 5, 6, 7]  # name  of classes
@@ -169,6 +161,44 @@ def getBMData(path, model_type='CNN'):
     if model_type == 'ANN':
         return train_test_split(NNXdata, NNYdata, test_size=0.2, random_state=1)
 
+def getBMData_split(path, model_type='CNN'):
+    CNNXtest_file_name = path + "/test_x.npy"
+    Ytest_file_name = path + "/test_y.npy"
+    CNNXtrain_file_name = path + "/train_x.npy"
+    Ytrain_file_name = path + "/train_y.npy"
+
+    CNNXtest = np.load(CNNXtest_file_name, allow_pickle=True)  # 데이터 로드. @파일명
+    CNNXtrain = np.load(CNNXtrain_file_name, allow_pickle=True)
+    Ytest = np.load(Ytest_file_name)  # 데이터 로드. @파일명
+    Ytrain = np.load(Ytrain_file_name)
+
+    if CNNXtest.ndim == 3:
+        CNNXtest = CNNXtest.reshape(CNNXtest.shape[0], CNNXtest.shape[1], CNNXtest.shape[2], 1)
+    else:
+        CNNXtest = CNNXtest
+
+    if CNNXtrain.ndim == 3:
+        CNNXtrain = CNNXtrain.reshape(CNNXtrain.shape[0], CNNXtrain.shape[1], CNNXtrain.shape[2], 1)
+    else:
+        CNNXtrain = CNNXtrain
+
+    if Ytest.ndim == 3:
+        Ytest = Ytest.reshape(Ytest.shape[0], (Ytest.shape[1] * Ytest.shape[2]))
+    else:
+        Ytest = Ytest
+    if Ytrain.ndim == 3:
+        Ytrain = Ytrain.reshape(Ytrain.shape[0], (Ytrain.shape[1] * Ytrain.shape[2]))
+        Ytrain = Ytrain.reshape(Ytrain.shape[0])
+    else:
+        Ytrain = Ytrain
+
+    CNNXtest = expand_3D(CNNXtest)
+    CNNXtrain = expand_3D(CNNXtrain)
+    Ytest = tf.keras.utils.to_categorical(Ytest)
+    Ytrain = tf.keras.utils.to_categorical(Ytrain)
+
+    if model_type == 'CNN':
+        return CNNXtrain, CNNXtest, Ytrain, Ytest
 
 def expand_3D(data_value):
     num, w, l, c = data_value.shape
@@ -247,7 +277,7 @@ def create_model(base_learning_rate, img_size=35, momentum=0.9, classes=7, model
 
     base_model.trainable = True
     # Print base model architecture
-    # base_model.summary()
+    base_model.summary()
 
     global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
 
@@ -270,27 +300,5 @@ def create_model(base_learning_rate, img_size=35, momentum=0.9, classes=7, model
     plot_model(model, to_file='MNV2model.png', show_shapes=True)
 
     return model
-
-# Show weight result
-# for layer in model.layers:
-#     if 'conv' in layer.name:
-#         kernel, biases = layer.get_weights()
-#         print(layer.name, kernel.shape)  # 커널의 텐서 모양을 출력
-#
-# kernel, biases = model.layers[0].get_weights()  # 층 0의 커널 정보를 저장
-# minv, maxv = kernel.min(), kernel.max()
-# kernel = (kernel - minv) / (maxv - minv)
-# n_kernel = 32
-#
-# plt.figure(figsize=(initial_epochs, 3))
-# plt.suptitle("Kernels of customMNV_2")
-# for i in range(n_kernel):
-#     f = kernel[:, :, :, i]
-#     plt.subplot(3, n_kernel, i + 1)
-#     plt.imshow(f[:, :, 0], cmap='gray')
-#     plt.xticks([])
-#     plt.yticks([])
-#     plt.title(str(i))
-# plt.show()
 
 ##############################################################################
